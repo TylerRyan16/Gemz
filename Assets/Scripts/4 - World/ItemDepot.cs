@@ -25,10 +25,10 @@ public class ItemDepot : MonoBehaviour
         if (value > 0)
         {
             string category = GetItemCategory(itemName);
+            Debug.Log("Category: " + category);
             statsManager.AddOreToDepot(category, 1);
             statsManager.AddMoney(value);
             statsManager.UpdateStatsInfo();
-            Debug.Log($"Depot collected {category} worth {value} credits.");
         }
 
         Destroy(item); // Destroy the item after processing
@@ -55,7 +55,7 @@ public class ItemDepot : MonoBehaviour
         if (itemName.Contains("polishedtanzanite")) return 525;   // Least valuable
 
 
-
+        if (itemName.Contains("coal")) return 1;
         if (itemName.Contains("rawCoal")) return 1;
         if (itemName.Contains("refinedCoal")) return 2;
 
@@ -88,24 +88,11 @@ public class ItemDepot : MonoBehaviour
         if (itemName.Contains("cuttanzanite")) return "Cut Tanzanite";
         if (itemName.Contains("polishedtanzanite")) return "Polished Tanzanite";
 
+        if (itemName.Contains("coal")) return "Coal";
         if (itemName.Contains("rawcoal")) return "Raw Coal";
         if (itemName.Contains("refinedcoal")) return "Refined Coal";
 
         Debug.LogWarning($"Unrecognized item: {itemName}");
         return null;
-    }
-
-
-    // Visualize input zones in the editor
-    private void OnDrawGizmos()
-    {
-        Gizmos.color = Color.green;
-        foreach (GameObject zone in inputZones)
-        {
-            if (zone != null)
-            {
-                Gizmos.DrawWireSphere(zone.transform.position, 0.5f); // Adjust radius as needed
-            }
-        }
     }
 }

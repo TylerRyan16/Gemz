@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using Unity.PlasticSCM.Editor.WebApi;
 using UnityEngine;
 using UnityEngine.Tilemaps;
 
@@ -12,16 +13,29 @@ public class OreSpawner : MonoBehaviour
         public int spawnCount;
     }
 
+    public EnvironmentManager environmentManager;
+
     public List<OreWithRarity> ores;
     public Tilemap tilemap;
 
     public int gridMin = -500;
     public int gridMax = 500;
 
+    private int totalOresOnMap; // Tracks total ores on the map
+
     void Start()
     {
+        environmentManager = FindObjectOfType<EnvironmentManager>();
         SpawnOres();
+
+        // Set the total ore count in the EnvironmentManager
+        if (environmentManager != null)
+        {
+            environmentManager.SetMaxOreCount(totalOresOnMap);
+            environmentManager.SetCurrentOreCount(totalOresOnMap);
+        }
     }
+  
 
     void SpawnOres()
     {
@@ -35,7 +49,8 @@ public class OreSpawner : MonoBehaviour
                 (int minDistance, int maxDistance) = GetDistanceRangeForRarity(rarity);
 
                 // Spawn ores within the calculated range
-                SpawnOreInRange(ore.orePrefab, ore.spawnCount, minDistance, maxDistance);
+                int spawnedCount = SpawnOreInRange(ore.orePrefab, ore.spawnCount, minDistance, maxDistance);
+                totalOresOnMap += spawnedCount; 
             }
             else
             {
@@ -60,9 +75,10 @@ public class OreSpawner : MonoBehaviour
         }
     }
 
-    void SpawnOreInRange(GameObject orePrefab, int oreCount, int minDistance, int maxDistance)
+    int SpawnOreInRange(GameObject orePrefab, int oreCount, int minDistance, int maxDistance)
     {
         List<Vector3Int> spawnPositions = new List<Vector3Int>();
+        int actualSpawnCount = 0;
 
         for (int i = 0; i < oreCount; i++)
         {
@@ -96,8 +112,11 @@ public class OreSpawner : MonoBehaviour
 
                 Instantiate(orePrefab, placePosition, Quaternion.Euler(0f, Random.Range(0f, 360f), 0f));
                 spawnPositions.Add(spawnPosition);
+                actualSpawnCount++;
             }
         }
+
+        return actualSpawnCount;
     }
 
     bool IsPositionValid(Vector3Int position, List<Vector3Int> existingPositions, float minDistance = 2f)
@@ -110,5 +129,23 @@ public class OreSpawner : MonoBehaviour
             }
         }
         return true;
+    }
+
+    public int GetTotalOresOnMap()
+    {
+        // Return the total ores tracked
+        return totalOresOnMap;
+    }
+
+    public void DecrementTotalOresOnMap()
+    {
+        if (totalOresOnMap > 0)
+        {
+            totalOresOnMap--;
+            if (environmentManager != null)
+            {
+                environmentManager.DecrementCurrentOresOnMap();
+            }
+        }
     }
 }

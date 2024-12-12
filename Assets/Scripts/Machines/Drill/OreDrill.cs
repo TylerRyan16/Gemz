@@ -7,6 +7,10 @@ public class OreDrill : MonoBehaviour
     private PrefabManager prefabManager;
     private StatsManager statsManager;
     private AudioSource audioSource;
+    private Camera mainCamera;
+    private ItemCardsDisplay itemCardsDisplay;
+    private EnvironmentManager environmentManager;
+    private OreSpawner oreSpawner;
 
     private float cost = 50f;
     private bool isPlaced = false;
@@ -15,11 +19,14 @@ public class OreDrill : MonoBehaviour
     private float drillSpeed;
 
     // fuel
-    private float currentFuel = 0f;
-    private float fuelUsagePerCycle;
+    public GameObject noFuelImage;
+    public float currentFuel = 0f;
+    private float fuelEfficiency;
+    private int oresMinedSinceLastFuel = 0; 
 
     // Radius for detecting conveyors
     private float conveyorDetectionRadius = 1.0f;
+
 
 
     private void Start()
@@ -27,26 +34,52 @@ public class OreDrill : MonoBehaviour
         statsManager = FindObjectOfType<StatsManager>();
         audioSource = GetComponent<AudioSource>();
         drillSpeed = statsManager.GetDrillSpeed();
-        fuelUsagePerCycle = statsManager.GetFuelUsagePerCycle();
+        itemCardsDisplay = FindObjectOfType<ItemCardsDisplay>();
+        environmentManager = FindObjectOfType<EnvironmentManager>();
+        oreSpawner = FindObjectOfType<OreSpawner>();
+
+        fuelEfficiency = statsManager.GetFuelEfficiency();
+
+        noFuelImage.SetActive(false);
+        mainCamera = Camera.main;
 
         SetPlaced(true);
     }
 
     private void Update()
     {
+        if (Input.GetKeyDown(KeyCode.B))
+        {
+            environmentManager.DecrementCurrentOresOnMap();
+        }
+
+        if (noFuelImage.activeSelf)
+        {
+            Vector3 direction = noFuelImage.transform.position - mainCamera.transform.position; // Flip direction
+            direction.y = 0; // Lock rotation to Y-axis
+            noFuelImage.transform.rotation = Quaternion.LookRotation(direction);
+        }
+
         if (isPlaced && isMining == false)
         {
             if (currentFuel <= 0)
             {
+                noFuelImage.SetActive(true);
                 StopMining();
                 return;
             }
+
             bool oreDetected = CheckForOreBelow();
             if (oreDetected)  // Start mining if ore is detected and not already mining
             {
                 if (!audioSource.isPlaying) audioSource.Play();
                 StartCoroutine(MineOreCycle());  // Start the mining process
             }
+        }
+
+        if (currentFuel > 0)
+        {
+            noFuelImage.SetActive(false);
         }
     }
 
@@ -85,13 +118,17 @@ public class OreDrill : MonoBehaviour
                 yield break;
             }
 
-            // Find nearby conveyors and try to add ore
+            if (currentFuel <= 0)
+            {
+                noFuelImage.SetActive(true);
+                StopMining();
+                yield break;
+            }
+
             ConveyorBelt selectedConveyor = FindRandomAvailableConveyor();
             if (selectedConveyor != null && selectedConveyor.itemsOnBelt.Count < selectedConveyor.maxItems)
             {
-                // Decrement fuel
-                currentFuel -= fuelUsagePerCycle;
-
+                
                 GameObject roughOrePrefab = currentOre.GetRoughPrefab(); // Use the rough prefab from RawOre
                 if (roughOrePrefab != null)
                 {
@@ -99,17 +136,26 @@ public class OreDrill : MonoBehaviour
 
                     // decrement ore vein
                     currentOre.DecrementOreCount(statsManager.GetOreAmountPerCycle());
+
+                    environmentManager.DecrementCurrentOresOnMap();
+
+                    oresMinedSinceLastFuel++;
+
+                    if (oresMinedSinceLastFuel >= statsManager.GetFuelEfficiency())
+                    {
+                        currentFuel--;
+                        itemCardsDisplay.UpdateFuelText();
+                        oresMinedSinceLastFuel = 0;
+                        Debug.Log("removing fuel");
+                    }
+
                     if (currentOre.GetGemsRemaining() <= 0)
                     {
                         if (audioSource.isPlaying) audioSource.Stop();
                         Destroy(currentOre.gameObject);
+                        isMining = false;  // Stop mining if no ore is detected
                     }
-                    isMining = false;  // Stop mining if no ore is detected
                 }
-            }
-            else
-            {
-                //Debug.Log("No available conveyor nearby.");
             }
         }
     }
@@ -172,31 +218,7 @@ public class OreDrill : MonoBehaviour
     public void SetPlaced(bool placed)
     {
         isPlaced = placed;
-    }
-
-    private void OnDrawGizmosSelected()
-    {
-        // Set the gizmo color
-        Gizmos.color = Color.cyan;
-
-        // Draw the detection radius as a wire sphere
-        Gizmos.DrawWireSphere(transform.position, conveyorDetectionRadius);
-
-        // Optional: Highlight start points of nearby conveyors
-        Collider[] hitColliders = Physics.OverlapSphere(transform.position, conveyorDetectionRadius);
-        foreach (Collider collider in hitColliders)
-        {
-            ConveyorBelt conveyor = collider.GetComponentInParent<ConveyorBelt>();
-            if (conveyor != null)
-            {
-                Transform startTransform = conveyor.transform.Find("start");
-                if (startTransform != null)
-                {
-                    Gizmos.color = Color.yellow;
-                    Gizmos.DrawSphere(startTransform.position, 0.1f); // Draw small spheres for start points
-                }
-            }
-        }
+        noFuelImage.SetActive(true);
     }
 
     public float GetCost()

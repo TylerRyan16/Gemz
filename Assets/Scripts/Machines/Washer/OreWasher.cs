@@ -7,9 +7,14 @@ public class OreWasher : MonoBehaviour
 {
     private StatsManager statsManager;
     private PrefabManager prefabManager;
+    private Camera mainCamera;
 
+    public GameObject noFuelImage;
     private float currentFuel = 0f;
+    private float fuelEfficiency;
+    private int oresWashedSinceLastFuel = 0;
 
+    private float washerSpeed;
     private float cost = 25f;
 
     public List<GameObject> itemsOnWasher = new List<GameObject>();
@@ -30,18 +35,37 @@ public class OreWasher : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
+        InitializeReferences();
+        fuelEfficiency = statsManager.GetFuelEfficiency();
+        washerSpeed = statsManager.GetWasherSpeed();
+        noFuelImage.SetActive(true);
+
+    }
+
+
+    void InitializeReferences()
+    {
         statsManager = FindObjectOfType<StatsManager>();
         prefabManager = FindObjectOfType<PrefabManager>();
 
         startPoint = transform.Find("startPoint");
         endPoint = transform.Find("endPoint");
-
+        mainCamera = Camera.main;
     }
 
     // Update is called once per frame
     void Update()
     {
+        if (noFuelImage.activeSelf)
+        {
+            Vector3 direction = noFuelImage.transform.position - mainCamera.transform.position; // Flip direction
+            direction.y = 0; // Lock rotation to Y-axis
+            noFuelImage.transform.rotation = Quaternion.LookRotation(direction);
+        }
+
+
         if (!isPlaced) return;
+
 
         if (doneWashingItem && itemsOnWasher.Count >= maxItems)
         {
@@ -52,6 +76,9 @@ public class OreWasher : MonoBehaviour
                 CheckForAvailableTransfers();
             }
         }
+
+        // Update noFuelImage visibility
+        noFuelImage.SetActive(currentFuel <= 0);
     }
 
     private void CheckForAvailableTransfers()
@@ -65,6 +92,7 @@ public class OreWasher : MonoBehaviour
         List<GameObject> itemsToTransfer = new List<GameObject>();
 
 
+        // get items to transfer
         foreach (GameObject item in itemsOnWasher)
         {
             // Check if the item is stationary and near the end of the conveyor
@@ -74,7 +102,7 @@ public class OreWasher : MonoBehaviour
             }
         }
 
-        // Process the transfer after checking
+        // Process the transfer after grabbing item
         foreach (GameObject item in itemsToTransfer)
         {
 
@@ -94,7 +122,7 @@ public class OreWasher : MonoBehaviour
        
     }
 
-    public bool AddItem(GameObject rawItem)
+    public bool AddItemToWasher(GameObject rawItem)
     {
         if (!isPlaced || itemsOnWasher.Count >= maxItems) return false;
 
@@ -104,19 +132,29 @@ public class OreWasher : MonoBehaviour
             return false;
         }
 
+        if (currentFuel <= 0)
+        {
+            return false;
+        }
+
         doneWashingItem = false;
 
         // Add item to washer and start processing
         GameObject itemToWash = Instantiate(rawItem, startPoint.position, Quaternion.identity, transform);
         itemsOnWasher.Add(itemToWash);
-        StartCoroutine(ProcessItem(itemToWash));
+        StartCoroutine(WashItem(itemToWash));
 
         return true;
     }
 
-    private IEnumerator ProcessItem(GameObject itemToWash)
+    private IEnumerator WashItem(GameObject itemToWash)
     {
         if (!isPlaced) yield break;
+
+        if (currentFuel <= 0)
+        {
+            yield break;
+        }
 
         // Move the rough gem to the endpoint
         while (itemToWash != null && Vector3.Distance(itemToWash.transform.position, endPoint.position) > 0.01f)
@@ -124,38 +162,45 @@ public class OreWasher : MonoBehaviour
             itemToWash.transform.position = Vector3.MoveTowards(
                 itemToWash.transform.position,
                 endPoint.position,
-                statsManager.GetWasherSpeed() * Time.deltaTime
+                washerSpeed * Time.deltaTime
             );
 
             yield return null;
         }
 
-
-
         GameObject cleanedItemPrefab = GetCleanedItemPrefab(itemToWash);
 
         if (cleanedItemPrefab != null)
         {
+            oresWashedSinceLastFuel++;
+
+            if (oresWashedSinceLastFuel >= fuelEfficiency)
+            {
+                currentFuel--;
+                oresWashedSinceLastFuel = 0;
+            }
+
             // Check for nearby conveyors and add cleaned gem
             ConveyorBelt nextConveyor = GetNextConveyor();
             if (nextConveyor != null && nextConveyor.itemsOnBelt.Count < nextConveyor.maxItems)
             {
                 itemsOnWasher.Remove(itemToWash);
                 nextConveyor.AddItem(cleanedItemPrefab);
-                doneWashingItem = true;
                 Destroy(itemToWash);
-            } else
+                doneWashingItem = true;
+
+            }
+            else
             {
                 // create cleaned gem at end point
                 GameObject cleanedItem = Instantiate(cleanedItemPrefab, endPoint.position, Quaternion.identity, transform);
                 itemsOnWasher.Remove(itemToWash);
                 itemsOnWasher.Add(cleanedItem);
-
-                doneWashingItem = true;
-                //destroy rough gem
                 Destroy(itemToWash);
+                doneWashingItem = true;
 
             }
+
         }
     }
 

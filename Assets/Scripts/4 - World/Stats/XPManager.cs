@@ -9,11 +9,13 @@ public class XPManager : MonoBehaviour
     // references
     public TextMeshProUGUI levelText;
     public Image progressionCircle;
+    public TechTree techTree;
 
     public int currentLevel = 1;
     public float currentXP = 0f;
-    public float xpToNextLevel = 1500f;
+    public float xpToNextLevel = 100;
     public float levelUpMultiplier = 1.5f;
+    public int skillPoints = 0;
 
     // Event for when the character levels up (optional for other scripts to listen to)
     public delegate void OnLevelUp(int newLevel);
@@ -46,8 +48,8 @@ public class XPManager : MonoBehaviour
         currentXP -= xpToNextLevel; 
         xpToNextLevel *= levelUpMultiplier; 
 
-        levelText.text = GetCurrentLevel().ToString(); 
-
+        levelText.text = GetCurrentLevel().ToString();
+        skillPoints++;
 
         UpdateProgressionCircle(); 
         // Trigger the level-up event for other scripts to respond
@@ -73,5 +75,15 @@ public class XPManager : MonoBehaviour
         {
             progressionCircle.fillAmount = GetXPProgress();
         }
+    }
+
+    public int GetSkillPoints()
+    {
+        return skillPoints;
+    }
+
+    public void UseSkillPoint()
+    {
+        skillPoints--;
     }
 }

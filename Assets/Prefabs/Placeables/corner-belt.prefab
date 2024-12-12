@@ -116,6 +116,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   itemsOnBelt: []
   maxItems: 1
+  isCornerConveyor: 1
 --- !u!65 &7391207435801626004
 BoxCollider:
   m_ObjectHideFlags: 0

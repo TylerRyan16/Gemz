@@ -137,20 +137,23 @@ public class ConveyorBelt : MonoBehaviour
                 nextConveyor.AddItem(item);
                 Destroy(item);
             }
-            else if (nextObject is OreWasher nextWasher && nextWasher.itemsOnWasher.Count < nextWasher.maxItems && nextWasher.IsPlaced())
+            else if (nextObject is OreWasher nextWasher && nextWasher.IsPlaced() && nextWasher.GetFuel() > 0 && nextWasher.itemsOnWasher.Count < nextWasher.maxItems)
             {
+               // Debug.Log("sending to washer");
                 itemsOnBelt.Remove(item);
-                nextWasher.AddItem(item);
+                nextWasher.AddItemToWasher(item);
                 Destroy(item);
             }
             else if (nextObject is ItemDepot itemDepot)
             {
                 itemsOnBelt.Remove(item);
+                Debug.Log("sending: " + item + " to inventory");
                 itemDepot.SendItemToInventory(item);
                 Destroy(item);
             } 
             else
             {
+                //Debug.Log("staying at end of conveyor");
                 // Stay at end point if next object is full
                 item.transform.position = displayEndPoint.position;
             }
@@ -243,10 +246,10 @@ public class ConveyorBelt : MonoBehaviour
                 nextConveyor.AddItem(item); // Add it to the next conveyor
                 Destroy(item); // Destroy the item instance here
             }
-            else if (nextObject is OreWasher nextWasher && nextWasher.itemsOnWasher.Count < nextWasher.maxItems && nextWasher.IsPlaced())
+            else if (nextObject is OreWasher nextWasher && nextWasher.itemsOnWasher.Count < nextWasher.maxItems && nextWasher.IsPlaced() && nextWasher.GetFuel() > 0)
             {
                 itemsOnBelt.Remove(item); // Remove from the current conveyor
-                nextWasher.AddItem(item); // Add it to the washer
+                nextWasher.AddItemToWasher(item); // Add it to the washer
                 Destroy(item); // Destroy the item instance here
             }
             else

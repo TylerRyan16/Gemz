@@ -10,11 +10,21 @@ using UnityEngine.EventSystems;
 public class TechTree : MonoBehaviour
 {
 
+    public Texture2D defaultCursor;
+    public Texture2D clickCursor;
+    public Vector2 cursorHotspot = Vector2.zero;
+
     private StatsManager stats;
     public GameObject itemShopCanvas;
     public GameObject statsCanvas;
     public GameObject techTreeCanvas;
+    public ItemCardsDisplay itemCardDisplay;
+    public XPManager xpManager;
     public Color lineFilledColor;
+
+    // skill points text
+    public TextMeshProUGUI skillPointsText;
+    public int skillPoints;
 
 
     // BUTTON SPRITES
@@ -85,6 +95,8 @@ public class TechTree : MonoBehaviour
         conveyorStatsText.text = ":" + stats.GetConveyorBeltSpeed().ToString("F2"); ;
         drillStatsText.text = ":" + stats.GetDrillSpeed().ToString("F2"); ;
 
+        SetupListeners();
+
         // Initial hover setup
         UpdateHoverEvents();
     }
@@ -101,6 +113,21 @@ public class TechTree : MonoBehaviour
                 CloseTechTree();
             }
         }
+
+        skillPoints = xpManager.GetSkillPoints();
+        skillPointsText.text = "Skill Points: " + skillPoints;
+    }
+
+    public void SetupListeners()
+    {
+        // Set button listeners for upgrades
+        conveyorSpeed1Button.onClick.AddListener(UpgradeConveyorSpeed1);
+        conveyorSpeed2Button.onClick.AddListener(UpgradeConveyorSpeed2);
+        conveyorSpeed3Button.onClick.AddListener(UpgradeConveyorSpeed3);
+
+        drillSpeed1Button.onClick.AddListener(UpgradeDrillSpeed1);
+        drillSpeed2Button.onClick.AddListener(UpgradeDrillSpeed2);
+
     }
 
     void UpdateHoverEvents()
@@ -164,6 +191,8 @@ public class TechTree : MonoBehaviour
         itemShopCanvas.SetActive(false);
         statsCanvas.SetActive(false);
         techTreeOpen = true;
+
+        Cursor.SetCursor(clickCursor, cursorHotspot, CursorMode.Auto);
     }
 
     public void CloseTechTree()
@@ -176,6 +205,7 @@ public class TechTree : MonoBehaviour
         statsCanvas.SetActive(true);
         techTreeOpen = false;
 
+        Cursor.SetCursor(defaultCursor, cursorHotspot, CursorMode.Auto);
     }
 
     void AddHoverEvents(Button button, GameObject infoCard, TextMeshProUGUI statChangeText, float multiplier, bool isUnlocked)
@@ -227,57 +257,86 @@ public class TechTree : MonoBehaviour
         infoCard.SetActive(false);
     }
 
-    public void UpgradeConveyorSpeed()
+    public void UpgradeConveyorSpeed1()
     {
-        // UPGRADE 1
-        if (!conveyorSpeedUpgrade1)
+        if (!conveyorSpeedUpgrade1 && skillPoints > 0)
         {
             ApplyUpgrade(conveyorSpeed1Button, conveyorPressedSprite, stats.GetConveyorBeltSpeed() * 1.08f, false);
             conveyorSpeedUpgrade1 = true;
             conveyorSpeed2Button.interactable = true;
-            drillSpeed1Button.interactable = true;
-        }
-        // UPGRADE 2
-        else if (!conveyorSpeedUpgrade2 && conveyorSpeedUpgrade1)
-        {
-            ApplyUpgrade(conveyorSpeed2Button, conveyorPressedSprite, stats.GetConveyorBeltSpeed() * 1.15f, false);
+            drillSpeed1Button.interactable = true; // Unlock drill upgrade 1 if needed
+            xpManager.UseSkillPoint();
+
+            conveyorStatsText.text = ":" + stats.GetConveyorBeltSpeed().ToString("F2");
             ChangeSliderBackgroundColor(conveyor1To2, lineFilledColor);
-            conveyorSpeedUpgrade2 = true;
-            conveyorSpeed3Button.interactable = true;
-        }
-        // UPGRADE 3
-        else if (!conveyorSpeedUpgrade3 && conveyorSpeedUpgrade2)
-        {
-            ApplyUpgrade(conveyorSpeed3Button, conveyorPressedSprite, stats.GetConveyorBeltSpeed() * 1.23f, false);
-            ChangeSliderBackgroundColor(conveyor2To3, lineFilledColor);
-            conveyorSpeedUpgrade3 = true;
+            UpdateHoverEvents(); // Refresh hover events after upgrade
+            itemCardDisplay.UpdateMachineStatsText();
         }
 
-        conveyorStatsText.text = ":" + stats.GetConveyorBeltSpeed().ToString("F2");
-        UpdateHoverEvents(); // Refresh hover events after upgrade
+
     }
 
-
-    public void UpgradeDrillSpeed()
+    public void UpgradeConveyorSpeed2()
     {
-        // UPGRADE 1
-        if (!drillSpeedUpgrade1)
+        if (conveyorSpeedUpgrade1 && !conveyorSpeedUpgrade2 && skillPoints > 0)
+        {
+            ApplyUpgrade(conveyorSpeed2Button, conveyorPressedSprite, stats.GetConveyorBeltSpeed() * 1.15f, false);
+            conveyorSpeedUpgrade2 = true;
+            conveyorSpeed3Button.interactable = true; // Unlock next upgrade
+            xpManager.UseSkillPoint();
+
+            conveyorStatsText.text = ":" + stats.GetConveyorBeltSpeed().ToString("F2");
+            ChangeSliderBackgroundColor(conveyor2To3, lineFilledColor);
+            UpdateHoverEvents(); // Refresh hover events after upgrade
+            itemCardDisplay.UpdateMachineStatsText();
+        }
+    }
+
+    public void UpgradeConveyorSpeed3()
+    {
+        if (conveyorSpeedUpgrade2 && !conveyorSpeedUpgrade3 && skillPoints > 0)
+        {
+            ApplyUpgrade(conveyorSpeed3Button, conveyorPressedSprite, stats.GetConveyorBeltSpeed() * 1.23f, false);
+            conveyorSpeedUpgrade3 = true;
+            xpManager.UseSkillPoint();
+
+            conveyorStatsText.text = ":" + stats.GetConveyorBeltSpeed().ToString("F2");
+            UpdateHoverEvents(); // Refresh hover events after upgrade
+            itemCardDisplay.UpdateMachineStatsText();
+        }
+    }
+
+    public void UpgradeDrillSpeed1()
+    {
+        if (!drillSpeedUpgrade1 && skillPoints > 0)
         {
             ApplyUpgrade(drillSpeed1Button, drillPressedSprite, stats.GetDrillSpeed() * 0.9f, true);
             ChangeSliderBackgroundColor(conveyor1ToDrill1, lineFilledColor);
             drillSpeedUpgrade1 = true;
+            xpManager.UseSkillPoint();
+
+
             drillSpeed2Button.interactable = true;
+
+            drillStatsText.text = ":" + stats.GetDrillSpeed().ToString("F2");
+            UpdateHoverEvents(); // Refresh hover events after upgrade
+            itemCardDisplay.UpdateMachineStatsText();
         }
-        // UPGRADE 2
-        else if (!drillSpeedUpgrade2 && drillSpeedUpgrade1)
+    }
+
+    public void UpgradeDrillSpeed2()
+    {
+        if (drillSpeedUpgrade1 && !drillSpeedUpgrade2 && skillPoints > 0)
         {
             ApplyUpgrade(drillSpeed2Button, drillPressedSprite, stats.GetDrillSpeed() * 0.9f, true);
             ChangeSliderBackgroundColor(drill1To2, lineFilledColor);
             drillSpeedUpgrade2 = true;
-        }
+            xpManager.UseSkillPoint();
 
-        drillStatsText.text = ":" + stats.GetDrillSpeed().ToString("F2");
-        UpdateHoverEvents(); // Refresh hover events after upgrade
+            drillStatsText.text = ":" + stats.GetDrillSpeed().ToString("F2");
+            UpdateHoverEvents(); // Refresh hover events after upgrade
+            itemCardDisplay.UpdateMachineStatsText();
+        }
     }
 
     private void ApplyUpgrade(Button button, Sprite pressedSprite, float newSpeed, bool isDrillUpgrade)

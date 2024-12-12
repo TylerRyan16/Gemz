@@ -31,7 +31,10 @@ public class ItemCardsDisplay : MonoBehaviour
     public TextMeshProUGUI currentFuelToAddText;
     public TMP_InputField fuelInputField;
 
+    // how much fuel is currently in a machine
     public TextMeshProUGUI fuelText;
+    public TextMeshProUGUI orePerFuelText;
+    public TextMeshProUGUI speedText;
 
     public Image itemImageUI;
     public Button deleteButton;
@@ -63,9 +66,9 @@ public class ItemCardsDisplay : MonoBehaviour
         // listeners
         deleteButton.onClick.AddListener(DeleteSelectedObject);
         fuelInputField.onValueChanged.AddListener(OnFuelInputChanged);
-        maxFuelButton.onClick.AddListener(AddMaxFuelToTally);
 
 
+        UpdateMachineStatsText();
         SaveOriginalPositions();
     }
 
@@ -116,6 +119,8 @@ public class ItemCardsDisplay : MonoBehaviour
         {
             RotateSelectedObject(90f);
         }
+
+        UpdateFuelText();
 
     }
 
@@ -210,12 +215,40 @@ public class ItemCardsDisplay : MonoBehaviour
         fuelToAdd = 0;
         currentFuelToAddText.text = "0";
         UpdateFuelText();
+        UpdateMachineStatsText();
 
         // push bars over
         AdjustUIElementPositions();
 
         // set info card to open
         isInfoCardOpen = true;
+    }
+
+    public void UpdateMachineStatsText()
+    {
+        if (selectedObject == null) return;
+
+        if (selectedObject.TryGetComponent<OreDrill>(out OreDrill oreDrill))
+        {
+            orePerFuelText.text = $"Ore Per Fuel: {statsManager.GetFuelEfficiency()}";
+            speedText.text = $"Speed: {statsManager.GetDrillSpeed():F2}";
+        }
+        else if (selectedObject.TryGetComponent<OreWasher>(out OreWasher oreWasher))
+        {
+            orePerFuelText.text = $"Ore Per Fuel: {statsManager.GetFuelEfficiency()}";
+            speedText.text = $"Speed: {statsManager.GetWasherSpeed():F2}";
+        }
+        else if (selectedObject.TryGetComponent<ConveyorBelt>(out ConveyorBelt conveyorBelt))
+        {
+            orePerFuelText.text = "Ore Per Fuel: N/A";
+            speedText.text = $"Speed: {statsManager.GetConveyorBeltSpeed():F2}";
+        }
+        else
+        {
+            orePerFuelText.text = "Ore Per Fuel: N/A";
+            speedText.text = "Speed: N/A";
+        }
+
     }
 
     public void IncreaseFuelTally(int amountToAdd)
@@ -334,6 +367,8 @@ public class ItemCardsDisplay : MonoBehaviour
 
     public void UpdateFuelText()
     {
+        if (selectedObject == null) return;
+
         // Try to get the `GetFuel` method from the specific component
         if (selectedObject.TryGetComponent<OreDrill>(out OreDrill oreDrill))
         {
@@ -507,11 +542,19 @@ public class ItemCardsDisplay : MonoBehaviour
         if (obj != null && originalMaterials.ContainsKey(obj))
         {
             Renderer[] renderers = obj.GetComponentsInChildren<Renderer>();
+
+            // Filter out objects tagged as "noFuelImage"
+            renderers = System.Array.FindAll(renderers, renderer => renderer.gameObject.tag != "noFuelImage");
+
             Material[] originalMats = originalMaterials[obj];
 
             for (int i = 0; i < renderers.Length; i++)
             {
-                renderers[i].material = originalMats[i]; // Restore original material
+                // Ensure we don't go out of bounds
+                if (i < originalMats.Length)
+                {
+                    renderers[i].material = originalMats[i]; // Restore original material
+                }
             }
 
             originalMaterials.Remove(obj); // Remove from dictionary

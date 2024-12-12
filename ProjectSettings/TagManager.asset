@@ -17,6 +17,7 @@ TagManager:
   - MirrorCorner
   - depotInput
   - particleEffect
+  - noFuelImage
   layers:
   - Default
   - TransparentFX

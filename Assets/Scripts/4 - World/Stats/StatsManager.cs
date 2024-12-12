@@ -4,6 +4,7 @@ using TMPro;
 using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.UIElements;
 
 public class StatsManager : MonoBehaviour
 {
@@ -11,8 +12,11 @@ public class StatsManager : MonoBehaviour
     public static StatsManager Instance { get; private set; }
     public XPManager xpManager;
 
+    public Vector3 originalScale;
+    public Color originalColor;
+
     // coal usage
-    private float fuelUsagePerCycle = 1f;
+    private int fuelEfficiency = 3;
 
     // conveyor belt speed
     public float conveyorSpeed = 1f;
@@ -127,6 +131,8 @@ public class StatsManager : MonoBehaviour
     #region Setup
     private void Start()
     {
+        originalScale = coalText.transform.localScale;
+        originalColor = coalText.color;
         UpdateMoneyText();
 
         UpdateStatsInfo();
@@ -192,16 +198,12 @@ public class StatsManager : MonoBehaviour
     {
         statsPage.SetActive(false);
         statsPageOpen = false;
-        Cursor.SetCursor(null, Vector2.zero, CursorMode.Auto);
+        UnityEngine.Cursor.SetCursor(null, Vector2.zero, CursorMode.Auto);
     }
 
     public void UpdateStatsInfo()
     {
         coalText.text = coalCount.ToString();
-        garnetText.text = (cleanedGarnetCount + cutGarnetCount + polishedGarnetCount).ToString();
-        emeraldText.text = (cleanedEmeraldCount + cutEmeraldCount + polishedEmeraldCount).ToString();
-        tanzaniteText.text = (cleanedTanzaniteCount + cutTanzaniteCount + polishedTanzaniteCount).ToString();
-        moneyTextDisplay.text = money.ToString("F2");
 
         // Garnet Text Updates
         dirtyGarnetText.text = dirtyGarnetCount.ToString() + " Dirty";
@@ -224,73 +226,132 @@ public class StatsManager : MonoBehaviour
         cutTanzaniteText.text = cutTanzaniteCount.ToString() + " Cut";
         polishedTanzaniteText.text = polishedTanzaniteCount.ToString() + " Polished";
     }
+
+
+    private IEnumerator UpdateTextWithEffect(TextMeshProUGUI textField, string newValue)
+    {
+        textField.text = newValue;
+
+        // Target scale and duration
+        Vector3 targetScale = originalScale * 1.5f;
+        Color targetColor = Color.green;
+        float duration = 0.15f; 
+        float elapsedTime = 0f;
+
+        // FADE LARGER
+        while (elapsedTime < duration)
+        {
+            float t = elapsedTime / duration;
+            textField.transform.localScale = Vector3.Lerp(originalScale, targetScale, elapsedTime / duration);
+            textField.color = Color.Lerp(originalColor, targetColor, t);
+            elapsedTime += Time.deltaTime;
+            yield return null; 
+        }
+
+        // Ensure final scale is exact
+        textField.transform.localScale = targetScale;
+        textField.color = targetColor;
+
+        // Wait at the larger size
+        yield return new WaitForSeconds(0.05f);
+        
+        // FADE SMALLER
+        elapsedTime = 0f;
+        while (elapsedTime < duration)
+        {
+            float t = elapsedTime / duration;
+            textField.transform.localScale = Vector3.Lerp(targetScale, originalScale, elapsedTime / duration);
+            textField.color = Color.Lerp(targetColor, originalColor, t);
+            elapsedTime += Time.deltaTime;
+            yield return null; 
+        }
+
+        // reset properties
+        textField.transform.localScale = originalScale;
+        textField.color = originalColor;
+    }
     #endregion
+
+
 
 
     #region Adding Ores
     public void AddOreToDepot(string oreType, int amount)
     {
-        Debug.Log("adding ore: " + oreType);
+        Debug.Log("adding : " + oreType + " to depot");
         switch (oreType)
         {
             // Coal
             case "Coal":
                 coalCount += amount;
                 xpManager.AddXP(coalXPIncrease);
+                StartCoroutine(UpdateTextWithEffect(coalText, coalCount.ToString()));
                 break;
 
             // Garnet
             case "Dirty Garnet":
                 dirtyGarnetCount += amount;
                 xpManager.AddXP(dirtyGarnetXPIncrease);
+                StartCoroutine(UpdateTextWithEffect(garnetText, (dirtyGarnetCount + cleanedGarnetCount + cutGarnetCount + polishedGarnetCount).ToString()));
                 break;
             case "Cleaned Garnet":
                 cleanedGarnetCount += amount;
                 xpManager.AddXP(cleanedGarnetXPIncrease);
+                StartCoroutine(UpdateTextWithEffect(garnetText, (dirtyGarnetCount + cleanedGarnetCount + cutGarnetCount + polishedGarnetCount).ToString()));
                 break;
             case "Cut Garnet":
                 cutGarnetCount += amount;
                 xpManager.AddXP(cutGarnetXPIncrease);
+                StartCoroutine(UpdateTextWithEffect(garnetText, (dirtyGarnetCount + cleanedGarnetCount + cutGarnetCount + polishedGarnetCount).ToString()));
                 break;
             case "Polished Garnet":
                 polishedGarnetCount += amount;
                 xpManager.AddXP(polishedGarnetXPIncrease);
+                StartCoroutine(UpdateTextWithEffect(garnetText, (dirtyGarnetCount + cleanedGarnetCount + cutGarnetCount + polishedGarnetCount).ToString()));
                 break;
 
             // Emerald
             case "Dirty Emerald":
                 dirtyEmeraldCount += amount;
                 xpManager.AddXP(dirtyEmeraldXPIncrease);
+                StartCoroutine(UpdateTextWithEffect(emeraldText, (dirtyEmeraldCount + cleanedEmeraldCount + cutEmeraldCount + polishedEmeraldCount).ToString()));
                 break;
             case "Cleaned Emerald":
                 cleanedEmeraldCount += amount;
                 xpManager.AddXP(cleanedEmeraldXPIncrease);
+                StartCoroutine(UpdateTextWithEffect(emeraldText, (dirtyEmeraldCount + cleanedEmeraldCount + cutEmeraldCount + polishedEmeraldCount).ToString()));
                 break;
             case "Cut Emerald":
                 cutEmeraldCount += amount;
                 xpManager.AddXP(cutEmeraldXPIncrease);
+                StartCoroutine(UpdateTextWithEffect(emeraldText, (dirtyEmeraldCount + cleanedEmeraldCount + cutEmeraldCount + polishedEmeraldCount).ToString()));
                 break;
             case "Polished Emerald":
                 polishedEmeraldCount += amount;
                 xpManager.AddXP(polishedEmeraldXPIncrease);
+                StartCoroutine(UpdateTextWithEffect(emeraldText, (dirtyEmeraldCount + cleanedEmeraldCount + cutEmeraldCount + polishedEmeraldCount).ToString()));
                 break;
 
             // Tanzanite
             case "Dirty Tanzanite":
                 dirtyTanzaniteCount += amount;
                 xpManager.AddXP(dirtyTanzaniteXPIncrease);
+                StartCoroutine(UpdateTextWithEffect(tanzaniteText, (dirtyTanzaniteCount + cleanedTanzaniteCount + cutTanzaniteCount + polishedTanzaniteCount).ToString()));
                 break;
             case "Cleaned Tanzanite":
                 cleanedTanzaniteCount += amount;
                 xpManager.AddXP(cleanedTanzaniteXPIncrease);
+                StartCoroutine(UpdateTextWithEffect(tanzaniteText, (dirtyTanzaniteCount + cleanedTanzaniteCount + cutTanzaniteCount + polishedTanzaniteCount).ToString()));
                 break;
             case "Cut Tanzanite":
                 cutTanzaniteCount += amount;
                 xpManager.AddXP(cutTanzaniteXPIncrease);
+                StartCoroutine(UpdateTextWithEffect(tanzaniteText, (dirtyTanzaniteCount + cleanedTanzaniteCount + cutTanzaniteCount + polishedTanzaniteCount).ToString()));
                 break;
             case "Polished Tanzanite":
                 polishedTanzaniteCount += amount;
                 xpManager.AddXP(polishedTanzaniteXPIncrease);
+                StartCoroutine(UpdateTextWithEffect(tanzaniteText, (dirtyTanzaniteCount + cleanedTanzaniteCount + cutTanzaniteCount + polishedTanzaniteCount).ToString()));
                 break;
         }
     }
@@ -298,6 +359,7 @@ public class StatsManager : MonoBehaviour
     {
         coalCount += amount;
         xpManager.AddXP(coalXPIncrease);
+        StartCoroutine(UpdateTextWithEffect(coalText, coalCount.ToString()));
     }
     #endregion
 
@@ -352,9 +414,9 @@ public class StatsManager : MonoBehaviour
     }
 
     #region Getters
-    public float GetFuelUsagePerCycle()
+    public float GetFuelEfficiency()
     {
-        return fuelUsagePerCycle;
+        return fuelEfficiency;
     }
 
     public float GetConveyorBeltSpeed()
