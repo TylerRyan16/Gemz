@@ -6,7 +6,7 @@ using TMPro;
 
 public class ShopMenuManager : MonoBehaviour
 {
-    // main item shop that holds the submenus
+    // main item shop that holds the submenus & control arrows
     public GameObject itemShop;
     public GameObject upArrow;
     public GameObject downArrow;
@@ -22,7 +22,7 @@ public class ShopMenuManager : MonoBehaviour
     public Button qualityControlButton;
     public Button researchButton;
 
-    // Panels that contain item buttons for each category
+    // subpanels that contain item buttons for each category
     public GameObject transportPanel;
     public GameObject miningPanel;
     public GameObject storagePanel;
@@ -33,10 +33,24 @@ public class ShopMenuManager : MonoBehaviour
     public GameObject qualityControlPanel;
     public GameObject researchPanel;
 
-    public TextMeshProUGUI moneyDisplay;
+    /* ITEM BUTTONS */
+
+    // TRANSPORT 
+    public Button conveyorBeltButton;
+
+    // MINING 
+    public Button oreDrillButton;
+
+    // STORAGE 
+    public Button crateButton;
+
+
+
+    // UI DISPLAYS
     public PrefabManager prefabManager; 
     private GameObject player;
     private PlayerController playerController;
+    private StatsManager statsManager;
 
     private float conveyerBeltCost = 1f;
 
@@ -47,7 +61,21 @@ public class ShopMenuManager : MonoBehaviour
     {
         player = GameObject.FindWithTag("Player");
         playerController = player.GetComponent<PlayerController>();
+        statsManager = FindObjectOfType<StatsManager>();
 
+        SetupPanelListeners();
+
+        SetupButtonListeners();
+
+        
+
+        isShopOpen = true;
+        // update UI money display
+        statsManager.UpdateMoneyText();
+    }
+
+    private void SetupPanelListeners()
+    {
         // Attach listeners to each category button
         transportButton.onClick.AddListener(() => ToggleSubmenu(transportPanel));
         miningButton.onClick.AddListener(() => ToggleSubmenu(miningPanel));
@@ -58,11 +86,18 @@ public class ShopMenuManager : MonoBehaviour
         automationButton.onClick.AddListener(() => ToggleSubmenu(automationPanel));
         qualityControlButton.onClick.AddListener(() => ToggleSubmenu(qualityControlPanel));
         researchButton.onClick.AddListener(() => ToggleSubmenu(researchPanel));
-
-        isShopOpen = true;
-        // update UI money display
-        UpdateMoneyDisplay();
     }
+
+    private void SetupButtonListeners()
+    {
+        conveyorBeltButton.onClick.AddListener(() => prefabManager.SetCurrentItem(0));
+        oreDrillButton.onClick.AddListener(() => prefabManager.SetCurrentItem(1));
+        crateButton.onClick.AddListener(() => prefabManager.SetCurrentItem(2));
+
+    }
+
+
+   
 
     void ToggleSubmenu(GameObject categoryPanel)
     {
@@ -93,23 +128,16 @@ public class ShopMenuManager : MonoBehaviour
     {
         Item currentItem = prefabManager.GetCurrentItem();
 
-        if (playerController.GetCurrentMoney() >= currentItem.cost)
+        if (statsManager.GetCurrentMoney() >= currentItem.cost)
         {
-            playerController.SubtractMoney(currentItem.cost);
-            UpdateMoneyDisplay();
+            statsManager.SubtractMoney(currentItem.cost);
+            statsManager.UpdateMoneyText();
         }
         else
         {
             Debug.Log("not enough cash!");
         }
     }
-
-
-    public void UpdateMoneyDisplay()
-    {
-        moneyDisplay.text = "$" + playerController.GetCurrentMoney().ToString("F2");
-    }
-
 
     public void CloseAllSubmenus()
     {

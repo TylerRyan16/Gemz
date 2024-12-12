@@ -6,16 +6,39 @@ using UnityEngine;
 public class PrefabManager : MonoBehaviour
 {
     public List<Item> availableItems;  
-    public Item currentItem = null;
+    private Item currentItem = null;
     public GameObject displayPrefab;
 
     public GameObject straightConveyorPrefab; 
     public GameObject cornerConveyorPrefab;
     public GameObject mirroredCornerConveyorPrefab;
 
-    public GameObject garnetPrefab;
-    public GameObject emeraldPrefab;
-    public GameObject tanzanitePrefab;
+    //garnet prefabs
+    public GameObject dirtyGarnetPrefab;
+    public GameObject cleanedGarnetPilePrefab;
+    public GameObject cutGarnetPrefab;
+    public GameObject polishedGarnetPrefab;
+
+    // emerald prefabs
+    public GameObject dirtyEmeraldPrefab;
+    public GameObject cleanedEmeraldPilePrefab;
+    public GameObject cutEmeraldPrefab;
+    public GameObject polishedEmeraldPrefab;
+
+    // tanzanite prfabs
+    public GameObject dirtyTanzanitePrefab;
+    public GameObject cleanedTanzanitePilePrefab;
+    public GameObject cutTanzanitePrefab;
+    public GameObject polishedTanzanitePrefab;
+
+    public GameObject cleanedGemPrefab;
+
+    public Texture2D cursorTexture;
+
+    private void Start()
+    {
+        currentItem = null;
+    }
 
     public Item GetCurrentItem()
     {
@@ -43,20 +66,63 @@ public class PrefabManager : MonoBehaviour
         return displayPrefab;
     }
 
-    public GameObject GetGarnetPrefab()
+    // GARNET GETTERS
+
+    public GameObject GetDirtyGarnetPrefab()
     {
-        return garnetPrefab;
+        return dirtyGarnetPrefab;
     }
 
-    public GameObject GetEmeraldPrefab()
+    public GameObject GetCleanedGarnetPilePrefab()
     {
-        return emeraldPrefab; 
+        return cleanedGarnetPilePrefab;
     }
 
-    public GameObject GetTanzanitePrefab()
+
+    public GameObject GetCutGarnetPrefab()
     {
-        return tanzanitePrefab;
+        return cutGarnetPrefab;
     }
+
+    // EMERALD GETTERS
+
+    public GameObject GetDirtyEmeraldPrefab()
+    {
+        return dirtyEmeraldPrefab;
+    }
+
+    public GameObject GetCleanedEmeraldPilePrefab()
+    {
+        return cleanedEmeraldPilePrefab;
+    }
+
+
+    public GameObject GetCutEmeraldPrefab()
+    {
+        return cutEmeraldPrefab; 
+    }
+
+    // TANZANITE GETTERS
+
+    public GameObject GetDirtyTanzanitePrefab()
+    {
+        return dirtyTanzanitePrefab;
+    }
+
+    public GameObject GetCleanedTanzanitePilePrefab()
+    {
+        return cleanedTanzanitePilePrefab;
+    }
+
+    public GameObject GetCutTanzanitePrefab()
+    {
+        return cutTanzanitePrefab;
+    }
+
+
+
+
+    // CONVEYORS
 
     public GameObject GetCornerPrefab()
     {
@@ -67,6 +133,14 @@ public class PrefabManager : MonoBehaviour
     {
         return mirroredCornerConveyorPrefab;
     }
+
+
+    public Texture2D GetCursorTexture()
+    {
+        return cursorTexture;
+    }
+
+
 }
 
 

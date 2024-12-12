@@ -14,6 +14,7 @@ public class TechTree : MonoBehaviour
     public GameObject itemShopCanvas;
     public GameObject statsCanvas;
     public GameObject techTreeCanvas;
+    public Color lineFilledColor;
 
 
     // BUTTON SPRITES
@@ -38,9 +39,17 @@ public class TechTree : MonoBehaviour
     public Button conveyorSpeed2Button;
     public Button conveyorSpeed3Button;
 
+    // sliders
+    public Slider conveyor1To2;
+    public Slider conveyor2To3;
+    public Slider conveyor1ToDrill1;
+
     // ore drill
     public Button drillSpeed1Button;
     public Button drillSpeed2Button;
+
+    // sliders
+    public Slider drill1To2;
 
 
 
@@ -78,6 +87,20 @@ public class TechTree : MonoBehaviour
 
         // Initial hover setup
         UpdateHoverEvents();
+    }
+
+    private void Update()
+    {
+        if (Input.GetKeyDown(KeyCode.T))
+        {
+            if (!techTreeOpen)
+            {
+                OpenTechTree();
+            } else
+            {
+                CloseTechTree();
+            }
+        }
     }
 
     void UpdateHoverEvents()
@@ -218,6 +241,7 @@ public class TechTree : MonoBehaviour
         else if (!conveyorSpeedUpgrade2 && conveyorSpeedUpgrade1)
         {
             ApplyUpgrade(conveyorSpeed2Button, conveyorPressedSprite, stats.GetConveyorBeltSpeed() * 1.15f, false);
+            ChangeSliderBackgroundColor(conveyor1To2, lineFilledColor);
             conveyorSpeedUpgrade2 = true;
             conveyorSpeed3Button.interactable = true;
         }
@@ -225,6 +249,7 @@ public class TechTree : MonoBehaviour
         else if (!conveyorSpeedUpgrade3 && conveyorSpeedUpgrade2)
         {
             ApplyUpgrade(conveyorSpeed3Button, conveyorPressedSprite, stats.GetConveyorBeltSpeed() * 1.23f, false);
+            ChangeSliderBackgroundColor(conveyor2To3, lineFilledColor);
             conveyorSpeedUpgrade3 = true;
         }
 
@@ -239,6 +264,7 @@ public class TechTree : MonoBehaviour
         if (!drillSpeedUpgrade1)
         {
             ApplyUpgrade(drillSpeed1Button, drillPressedSprite, stats.GetDrillSpeed() * 0.9f, true);
+            ChangeSliderBackgroundColor(conveyor1ToDrill1, lineFilledColor);
             drillSpeedUpgrade1 = true;
             drillSpeed2Button.interactable = true;
         }
@@ -246,6 +272,7 @@ public class TechTree : MonoBehaviour
         else if (!drillSpeedUpgrade2 && drillSpeedUpgrade1)
         {
             ApplyUpgrade(drillSpeed2Button, drillPressedSprite, stats.GetDrillSpeed() * 0.9f, true);
+            ChangeSliderBackgroundColor(drill1To2, lineFilledColor);
             drillSpeedUpgrade2 = true;
         }
 
@@ -272,5 +299,30 @@ public class TechTree : MonoBehaviour
         }
 
 
+    }
+
+
+    void ChangeSliderBackgroundColor(Slider slider, Color color)
+    {
+        // Find the background object within the slider
+        Transform background = slider.transform.Find("Background");
+
+        if (background != null)
+        {
+            // Get the Image component and change its color
+            Image backgroundImage = background.GetComponent<Image>();
+            if (backgroundImage != null)
+            {
+                backgroundImage.color = color;
+            }
+            else
+            {
+                Debug.LogWarning("Background does not have an Image component.");
+            }
+        }
+        else
+        {
+            Debug.LogWarning("Background object not found in slider.");
+        }
     }
 }

@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.Tilemaps;
@@ -9,7 +10,9 @@ public class ConveyorPlacement : MonoBehaviour
     public Tilemap tilemap;
     private TileHover tileHover;
     public PrefabManager prefabManager;
-    private PlayerController playerController;
+    private PlayerController playerController; 
+    private ShopMenuManager shopMenuManager;
+    private StatsManager statsManager;
 
     // placement variables
     private List<GameObject> previewInstances = new List<GameObject>();
@@ -28,6 +31,8 @@ public class ConveyorPlacement : MonoBehaviour
         tileHover = GameObject.FindObjectOfType<TileHover>();
         playerController = FindObjectOfType<PlayerController>();
         audioSource = GetComponent<AudioSource>();
+        shopMenuManager = FindObjectOfType<ShopMenuManager>();
+        statsManager = FindObjectOfType<StatsManager>();
     }
 
 
@@ -95,6 +100,8 @@ public class ConveyorPlacement : MonoBehaviour
     {
         if (previewInstances.Count > 0)
         {
+            float totalCost = 0f;
+
             foreach (var preview in previewInstances)
             {
                 Vector3Int gridPosition = tilemap.WorldToCell(preview.transform.position);
@@ -151,11 +158,10 @@ public class ConveyorPlacement : MonoBehaviour
 
                     // Deduct money for placement
                     Item currentItem = prefabManager.GetCurrentItem();
-                    playerController.SubtractMoney(currentItem.cost);
+                    statsManager.SubtractMoney(currentItem.cost);
 
                     // Update the UI
-                    ShopMenuManager shopMenuManager = FindObjectOfType<ShopMenuManager>();
-                    shopMenuManager.UpdateMoneyDisplay();
+                    statsManager.UpdateMoneyText();
                 }
             }
             ClearPreviews();
@@ -322,14 +328,8 @@ public class ConveyorPlacement : MonoBehaviour
     {
         // Map the direction changes to corresponding rotations
         if (fromDirection == new Vector3Int(-1, 0, 0) && toDirection == new Vector3Int(0, 1, 0)) return 0f;   // Left to Up
-
-
         if (fromDirection == new Vector3Int(-1, 0, 0) && toDirection == new Vector3Int(0, -1, 0)) return 180f; // Left to Down
-
-
         if (fromDirection == new Vector3Int(1, 0, 0) && toDirection == new Vector3Int(0, 1, 0)) return 0f; // Right to Up
-
-
         if (fromDirection == new Vector3Int(1, 0, 0) && toDirection == new Vector3Int(0, -1, 0)) return 180f; // Right to Down
         if (fromDirection == new Vector3Int(0, 1, 0) && toDirection == new Vector3Int(-1, 0, 0)) return 270f; // Up to Left
         if (fromDirection == new Vector3Int(0, 1, 0) && toDirection == new Vector3Int(1, 0, 0)) return 90f;   // Up to Right

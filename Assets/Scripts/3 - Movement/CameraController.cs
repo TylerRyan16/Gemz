@@ -8,12 +8,16 @@ public class CameraController : MonoBehaviour
     public float moveSpeed = 10.0f;
     public float maxMoveSpeed = 50.0f;
     public float rotationSpeed = 5.0f;
+    public float zoomSpeed = 10.0f;
+    public float sprintMultiplier = 2.0f;
+    private PrefabManager prefabManager;
 
     public Terrain terrain;
 
 
     private void Start()
     {
+        prefabManager = FindObjectOfType<PrefabManager>();  
         CenterCameraOnTerrain();
     }
 
@@ -22,10 +26,10 @@ public class CameraController : MonoBehaviour
     {
         MoveIfClicking();
         HandleMovement();
-        SetCameraSpeed();
+        HandleScrolling();
         KeepCameraAboveTerrain();
         KeepCameraBelowCeiling();
-
+        ResetMoveSpeedIfNeeded();
     }
 
     private void MoveIfClicking()
@@ -49,60 +53,68 @@ public class CameraController : MonoBehaviour
 
     private void HandleMovement()
     {
+        float currentSpeed = moveSpeed;
+        if (Input.GetKey(KeyCode.LeftShift))
+        {
+            currentSpeed *= sprintMultiplier;
+        }
+
         // if holding w
         if (Input.GetKey(KeyCode.W))
         {
-            transform.Translate(Vector3.forward * moveSpeed * Time.deltaTime, Space.Self);
+            transform.Translate(Vector3.forward * currentSpeed * Time.deltaTime, Space.Self);
         }
 
         // if holding s
         if (Input.GetKey(KeyCode.S))
         {
-            transform.Translate(Vector3.back * moveSpeed * Time.deltaTime, Space.Self);
+            transform.Translate(Vector3.back * currentSpeed * Time.deltaTime, Space.Self);
         }
 
         // if holding d
         if (Input.GetKey(KeyCode.D))
         {
-            transform.Translate(Vector3.right * moveSpeed * Time.deltaTime, Space.Self);
+            transform.Translate(Vector3.right * currentSpeed * Time.deltaTime, Space.Self);
         }
 
         // if holding a
         if (Input.GetKey(KeyCode.A))
         {
-            transform.Translate(Vector3.left * moveSpeed * Time.deltaTime, Space.Self);
+            transform.Translate(Vector3.left * currentSpeed * Time.deltaTime, Space.Self);
         }
 
         // if holding spacebar
         if (Input.GetKey(KeyCode.Space))
         {
-            transform.Translate(Vector3.up * moveSpeed * Time.deltaTime, Space.Self);
+            transform.Translate(Vector3.up * currentSpeed * Time.deltaTime, Space.Self);
         }
 
         // if holding shift
-        if (Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift))
+        if (Input.GetKey(KeyCode.LeftControl))
         {
-            transform.Translate(Vector3.down * moveSpeed * Time.deltaTime, Space.Self);
+            transform.Translate(Vector3.down * currentSpeed * Time.deltaTime, Space.Self);
         }
+
     }
 
-    private void SetCameraSpeed()
+    private void HandleScrolling()
     {
-        // if scrolling
-        if (Input.GetAxisRaw("Mouse ScrollWheel") > 0)
-        {
-            moveSpeed += 1;
-            moveSpeed = Mathf.Clamp(moveSpeed, 5, maxMoveSpeed);
+        float scroll = Input.GetAxisRaw("Mouse ScrollWheel");
 
+        if (Input.GetMouseButton(1) && (Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift)))
+        {
+            // Adjust speed when holding right-click and shift
+            moveSpeed += scroll * 5f;
+            moveSpeed = Mathf.Clamp(moveSpeed, 5, maxMoveSpeed);
         }
-
-        if (Input.GetAxisRaw("Mouse ScrollWheel") < 0)
+        else if (scroll != 0)
         {
-            moveSpeed -= 1;
-            moveSpeed = Mathf.Clamp(moveSpeed, 5, maxMoveSpeed);
-
+            // Zoom in and out
+            Vector3 zoomDirection = transform.forward * scroll * zoomSpeed;
+            transform.position += zoomDirection;
         }
     }
+
 
     private void KeepCameraAboveTerrain()
     {
@@ -132,6 +144,15 @@ public class CameraController : MonoBehaviour
         } else
         {
             Debug.Log("Terrain not assigned");
+        }
+    }
+
+    private void ResetMoveSpeedIfNeeded()
+    {
+        if ((Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift)) && Input.GetKeyDown(KeyCode.R))
+        {
+            Debug.Log("Resetting speed");
+            moveSpeed = 10.0f;
         }
     }
 }

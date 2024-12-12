@@ -8,9 +8,9 @@ public class PlayerController : MonoBehaviour
     // prefab manager
     public PrefabManager prefabManager;
     public ShopMenuManager shopMenuManager;
-    public float money = 0f;
-    public int carryCapacity = 100;
-    public bool isShopOpen;
+    public ItemCardsDisplay itemCardsDisplay;
+   
+
 
     private void Start()
     {
@@ -19,6 +19,20 @@ public class PlayerController : MonoBehaviour
 
     private void Update()
     {
+        HandleKeybinds();
+
+        
+        
+    }
+
+    public void HandleKeybinds()
+    {
+        // dont accept these keybinds if an item card is open
+        if (itemCardsDisplay.IsInfoCardOpen())
+        {
+            return;
+        }
+
         if (Input.GetKeyDown(KeyCode.Alpha1))
         {
             prefabManager.SetCurrentItem(0); // switch to conveyor
@@ -40,32 +54,15 @@ public class PlayerController : MonoBehaviour
             if (shopMenuManager.IsShopOpen())
             {
                 shopMenuManager.CloseMainShopMenuAndSubmenus();
-            } else 
+            }
+            else
             {
                 shopMenuManager.OpenMainShop();
             }
         }
     }
 
-    public void AddMoney(float amount)
-    {
-        money += amount;
-    }
 
-    public void SubtractMoney(float amount)
-    {
-        money -= amount;
-    }
-
-    public void UpgradeCarryCapacity(int amount)
-    {
-        carryCapacity += amount;
-    }
-
-    public float GetCurrentMoney()
-    {
-        return money;
-    }
 }
 
 

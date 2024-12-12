@@ -13,6 +13,7 @@ public class TileHover : MonoBehaviour
     private GameObject previewInstance;
     private Vector3Int lastGridPosition;
 
+
     public HashSet<Vector3Int> occupiedGridPositions = new HashSet<Vector3Int>(); // Shared between classes
     private float currentRotation = 0f; // The single rotation variable
 
@@ -21,28 +22,17 @@ public class TileHover : MonoBehaviour
 
     void Update()
     {
-     
+        if (Input.GetKeyDown(KeyCode.N))
+        {
+            PrintOccupiedGridPositions();
+        }
+
         if (prefabManager.GetCurrentItem() == null || prefabManager.GetCurrentItem().prefab == null)
         {
             // If no prefab is selected, destroy the current preview (if it exists) and exit early
             DestroyPreview();
 
             noItemSelected = true;
-
-            // Check for mouse click to interact with placed conveyor belts
-            if (Input.GetMouseButtonDown(0))
-            {
-                Ray ray = mainCamera.ScreenPointToRay(Input.mousePosition);
-                if (Physics.Raycast(ray, out RaycastHit hit))
-                {
-                    ConveyorBelt conveyor = hit.collider.GetComponent<ConveyorBelt>();
-                    if (conveyor != null)
-                    {
-                        // optionally, call a method on the ConveyorBelt script to add an item
-                        conveyor.AddItem(prefabManager.GetDisplayPrefab());
-                    }
-                }
-            }
 
             return;
         } else
@@ -159,6 +149,27 @@ public class TileHover : MonoBehaviour
         if (previewInstance != null)
         {
             previewInstance.transform.rotation = Quaternion.Euler(0, currentRotation, 0);
+        }
+    }
+
+    public void PrintOccupiedGridPositions()
+    {
+        if (occupiedGridPositions.Count == 0)
+        {
+            Debug.Log("occupiedGridPositions is empty.");
+        }
+        else
+        {
+            string positions = "Occupied Grid Positions: ";
+            foreach (var position in occupiedGridPositions)
+            {
+                positions += position.ToString() + ", ";
+            }
+
+            // Remove the trailing comma and space for cleaner output
+            positions = positions.TrimEnd(',', ' ');
+
+            Debug.Log(positions);
         }
     }
 }

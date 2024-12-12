@@ -5,47 +5,63 @@ using UnityEngine.Tilemaps;
 
 public class OreSpawner : MonoBehaviour
 {
-
     [System.Serializable]
-
     public class OreWithRarity
     {
         public GameObject orePrefab;
-        public int rarity;
-        public Material oreMaterial;
+        public int spawnCount;
     }
 
-
     public List<OreWithRarity> ores;
-    public int[] oreCounts;
     public Tilemap tilemap;
-    private TileHover tileHover;
 
     public int gridMin = -500;
     public int gridMax = 500;
 
-
     void Start()
     {
-        tileHover = FindObjectOfType<TileHover>();
         SpawnOres();
     }
 
     void SpawnOres()
     {
-        // Spawn least rare ores in the entire grid
-        SpawnOreInRange(ores.FindAll(o => o.rarity == 1), oreCounts[0], gridMin, gridMax);
+        foreach (var ore in ores)
+        {
+            RawOre oreScript = ore.orePrefab.GetComponent<RawOre>();
+            if (oreScript != null)
+            {
+                // Define ranges based on rarity
+                int rarity = oreScript.GetOreRarity();
+                (int minDistance, int maxDistance) = GetDistanceRangeForRarity(rarity);
 
-        // Spawn second rarest ores in the -500 to -250 or 250 to 500 range
-        SpawnOreInRange(ores.FindAll(o => o.rarity == 2), oreCounts[2], -500, -250, 250, 500);
-
-        // Spawn rarest ores in the -500 to -400 or 400 to 500 range
-        SpawnOreInRange(ores.FindAll(o => o.rarity == 3), oreCounts[2], -500, -400, 400, 500);
-
+                // Spawn ores within the calculated range
+                SpawnOreInRange(ore.orePrefab, ore.spawnCount, minDistance, maxDistance);
+            }
+            else
+            {
+                Debug.LogWarning($"Ore prefab {ore.orePrefab.name} is missing a RawOre component!");
+            }
+        }
     }
 
-    void SpawnOreInRange(List<OreWithRarity> orePrefabSet, int oreCount, int rangeMinX, int rangeMaxX, int rangeMinAltX = 0, int rangeMaxAltX = 0) { 
+    (int minDistance, int maxDistance) GetDistanceRangeForRarity(int rarity)
+    {
+        switch (rarity)
+        {
+            case 1:
+                return (25, 300);
+            case 2:
+                return (250, 390);
+            case 3:
+                return (360, 500);
+            default:
+                Debug.LogWarning($"Undefined rarity: {rarity}. Defaulting to full range.");
+                return (0, 500);
+        }
+    }
 
+    void SpawnOreInRange(GameObject orePrefab, int oreCount, int minDistance, int maxDistance)
+    {
         List<Vector3Int> spawnPositions = new List<Vector3Int>();
 
         for (int i = 0; i < oreCount; i++)
@@ -55,50 +71,34 @@ public class OreSpawner : MonoBehaviour
 
             for (int attempts = 0; attempts < 10; attempts++)
             {
-                // Randomly choose between the two possible ranges (either primary or alternative range if provided)
-                int x;
-                if (rangeMinAltX != 0 || rangeMaxAltX != 0)
-                {
-                    x = (Random.value < 0.5f)
-                        ? Random.Range(rangeMinX, rangeMaxX)
-                        : Random.Range(rangeMinAltX, rangeMaxAltX);
-                }
-                else
-                {
-                    x = Random.Range(rangeMinX, rangeMaxX);
-                }
+                // Randomly choose a position within a ring around the center
+                float angle = Random.Range(0, Mathf.PI * 2);
+                float distance = Random.Range(minDistance, maxDistance);
 
-                // Randomly within full grid Z-axis range
-                int y = Random.Range(gridMin, gridMax);
+                int x = Mathf.RoundToInt(distance * Mathf.Cos(angle));
+                int y = Mathf.RoundToInt(distance * Mathf.Sin(angle));
 
-                // Get the grid position
                 spawnPosition = new Vector3Int(x, y, 1);
 
-                // check if pos is valid 
+                // Ensure position validity
                 if (IsPositionValid(spawnPosition, spawnPositions))
                 {
                     validPosition = true;
                     break;
                 }
             }
-            
+
             if (validPosition)
             {
-                GameObject selectedOrePrefab = ChooseOreBasedOnRarity(orePrefabSet);
-                Quaternion randomRotation = Quaternion.Euler(0f, Random.Range(0f, 360f), 0f);
-
-                // Convert the grid position to world position for actual instantiation
+                // Convert grid position to world position
                 Vector3 placePosition = tilemap.GetCellCenterWorld(spawnPosition);
-                placePosition.y = 1.4f;
-                GameObject spawnedOre = Instantiate(selectedOrePrefab, placePosition, randomRotation);
-                ApplyMaterialToOre(spawnedOre, orePrefabSet.Find(ore => ore.orePrefab == selectedOrePrefab).oreMaterial);
+                placePosition.y = 1.1f; // Adjust height for ore placement
 
+                Instantiate(orePrefab, placePosition, Quaternion.Euler(0f, Random.Range(0f, 360f), 0f));
                 spawnPositions.Add(spawnPosition);
             }
         }
     }
-
-
 
     bool IsPositionValid(Vector3Int position, List<Vector3Int> existingPositions, float minDistance = 2f)
     {
@@ -110,40 +110,5 @@ public class OreSpawner : MonoBehaviour
             }
         }
         return true;
-    }
-
-    void ApplyMaterialToOre(GameObject ore, Material material)
-    {
-        if (material != null)
-        {
-            MeshRenderer[] meshRenderers = ore.GetComponentsInChildren<MeshRenderer>();
-            foreach (MeshRenderer renderer in meshRenderers)
-            {
-                renderer.material = material;
-            }
-        }
-    }
-
-    GameObject ChooseOreBasedOnRarity(List<OreWithRarity> orePrefabsSet)
-    {
-        int totalWeight = 0;
-        foreach (var ore in orePrefabsSet)
-        {
-            totalWeight += ore.rarity;
-        }
-
-        int randomWeight = Random.Range(0, totalWeight);
-        int currentWeight = 0;
-
-        foreach (var ore in orePrefabsSet)
-        {
-            currentWeight += ore.rarity;
-            if (randomWeight < currentWeight)
-            {
-                return ore.orePrefab;
-            }
-        }
-
-        return orePrefabsSet[0].orePrefab;
     }
 }
